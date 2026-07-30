@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Happy Angun Day <3</title>
+  <title>Happy Angun Day</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Itim&display=swap');
 
@@ -50,6 +50,16 @@
       width: 100%;
       height: 100%;
       z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Hidden YouTube Player Wrapper */
+    #yt-player-container {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
       pointer-events: none;
     }
 
@@ -109,7 +119,7 @@
       -webkit-transform: translateZ(0);
     }
 
-    /* ================= FRONT SIDE ================= */
+    /* FRONT SIDE */
     .card-front {
       background-color: #451a03;
       color: #ffffff;
@@ -120,7 +130,6 @@
       z-index: 2;
     }
 
-    /* Dedicated HTML Image Tag for Reliable Safari Rendering */
     .card-bg-img {
       position: absolute;
       inset: 0;
@@ -129,12 +138,13 @@
       object-fit: cover;
       object-position: center;
       z-index: 0;
+      border-radius: clamp(18px, 4vw, 28px);
     }
 
     .front-overlay {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle, rgba(69, 26, 3, 0.15) 0%, rgba(69, 26, 3, 0.6) 100%);
+      background: radial-gradient(circle, rgba(69, 26, 3, 0.15) 0%, rgba(69, 26, 3, 0.65) 100%);
       z-index: 1;
       pointer-events: none;
     }
@@ -199,7 +209,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
-    /* ================= BACK SIDE ================= */
+    /* BACK SIDE */
     .card-back {
       background: #fffdf5;
       color: var(--text-dark);
@@ -248,7 +258,6 @@
       align-items: flex-end;
     }
 
-    /* Stamp Design */
     .stamp-box {
       width: clamp(65px, 15vw, 80px);
       height: clamp(80px, 18vw, 95px);
@@ -309,7 +318,7 @@
       gap: 6px;
     }
 
-    /* ================= CUTE MASCOT CHARACTER ================= */
+    /* CUTE MASCOT CHARACTER */
     .mascot-container {
       position: fixed;
       bottom: calc(10px + env(safe-area-inset-bottom));
@@ -347,7 +356,7 @@
       transform: scale(1.15) rotate(8deg);
     }
 
-    /* ================= CONTROLS ================= */
+    /* CONTROLS */
     .controls-panel {
       z-index: 2;
       margin-top: clamp(15px, 3vw, 25px);
@@ -380,7 +389,6 @@
       box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
     }
 
-    /* ================= MOBILE & TABLET RESPONSIVE RULES ================= */
     @media (max-width: 550px) {
       :root {
         --card-height: 420px;
@@ -428,13 +436,17 @@
   <!-- Ambient Canvas -->
   <canvas id="bg-canvas"></canvas>
 
+  <!-- Hidden Container for YouTube iFrame -->
+  <div id="yt-player-container">
+    <div id="yt-player"></div>
+  </div>
+
   <div class="viewport">
     <div class="card" id="postcard" onclick="flipCard(event)">
       
       <!-- FRONT FACE -->
       <div class="card-face card-front">
-        <!-- Photo explicitly rendered as an img tag for WebKit compatibility -->
-        <img src="angun1.jpg" alt="Card Background" class="card-bg-img" />
+        <img src="angun1.jpg" alt="Angun Birthday Photo" class="card-bg-img" />
         <div class="front-overlay"></div>
         <div class="front-content">
           <div class="front-header">✨ A Special Wish For You Na ✨</div>
@@ -489,12 +501,14 @@
 
   <!-- External Confetti Library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
-    /* ================= PARAMETERS & CONFIG ================= */
+    /* PARAMETERS & CONFIG */
     const messages = {
       polite: "Happy Birthday, Angun. 🎈\n\nI miss you and wish you all the best. I hope your day is filled with peace, smiles, and happiness na Angun <3.",
-      short: "Happy Birthday, Angun! 💛\n\nWishing you a warm, gentle day and a year full of peace and good health na angun<3."
+      short: "Happy Birthday, Angun! 💛\n\nWishing you a warm, gentle day and a year full of peace and good health."
     };
 
     let currentMessage = messages.polite;
@@ -502,7 +516,50 @@
     let typingTimer = null;
     let isFlipped = false;
 
-    /* ================= RELIABLE FLIP LOGIC FOR IOS ================= */
+    /* YOUTUBE AUDIO INTEGRATION ("ปะแล๊ดปะแล่น" - เบื๊อก Feat. เดอะเพอะ) */
+    let player;
+    let isPlaying = false;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('yt-player', {
+        height: '1',
+        width: '1',
+        videoId: 'dIY8tX83x-U', // Official "ปะแล๊ดปะแล่น" Video ID
+        playerVars: {
+          'autoplay': 0,
+          'controls': 0,
+          'loop': 1,
+          'playlist': 'dIY8tX83x-U'
+        },
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerStateChange(event) {
+      const btn = document.getElementById('music-btn');
+      if (event.data === YT.PlayerState.PLAYING) {
+        isPlaying = true;
+        btn.innerText = "🎵 Palaad Palaen ✨";
+      } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        isPlaying = false;
+        btn.innerText = "🎵 Music: OFF";
+      }
+    }
+
+    function toggleMusic() {
+      const btn = document.getElementById('music-btn');
+      if (!player) return;
+
+      if (isPlaying) {
+        player.pauseVideo();
+      } else {
+        player.playVideo();
+      }
+    }
+
+    /* FLIP LOGIC */
     const postcard = document.getElementById('postcard');
 
     function flipCard(event) {
@@ -528,7 +585,7 @@
       }
     }
 
-    // 3D Parallax Tilt Effect for Desktop Mouse
+    // 3D Parallax Tilt Effect
     const viewport = document.querySelector('.viewport');
 
     viewport.addEventListener('mousemove', (e) => {
@@ -551,7 +608,7 @@
       postcard.style.webkitTransform = baseRotation;
     });
 
-    /* ================= TYPEWRITER EFFECT ================= */
+    /* TYPEWRITER EFFECT */
     function startTypewriter() {
       resetTypewriter();
       const textContainer = document.getElementById('message-text');
@@ -583,7 +640,7 @@
       }
     }
 
-    /* ================= CUTE MASCOT INTERACTION ================= */
+    /* CUTE MASCOT INTERACTION */
     const phrases = [
       "Happy Birthday! 🎉",
       "Have a sweet day! 🍰",
@@ -603,60 +660,7 @@
       });
     }
 
-    /* ================= 8-BIT AUDIO SYNTHESIZER ================= */
-    let audioCtx = null;
-    let isPlaying = false;
-    let audioTimer = null;
-
-    function toggleMusic() {
-      const btn = document.getElementById('music-btn');
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-      if (isPlaying) {
-        isPlaying = false;
-        clearTimeout(audioTimer);
-        btn.innerText = "🎵 Music: OFF";
-      } else {
-        isPlaying = true;
-        btn.innerText = "🎵 Music: ON ✨";
-        playLullabyMelody();
-      }
-    }
-
-    function playNote(freq, duration) {
-      if (!isPlaying || !audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    }
-
-    const notes = [
-      { f: 264, d: 0.3 }, { f: 264, d: 0.3 }, { f: 297, d: 0.5 }, { f: 264, d: 0.5 }, { f: 352, d: 0.5 }, { f: 330, d: 0.8 },
-      { f: 264, d: 0.3 }, { f: 264, d: 0.3 }, { f: 297, d: 0.5 }, { f: 264, d: 0.5 }, { f: 396, d: 0.5 }, { f: 352, d: 0.8 }
-    ];
-
-    function playLullabyMelody() {
-      let idx = 0;
-      function step() {
-        if (!isPlaying) return;
-        const note = notes[idx];
-        playNote(note.f, note.d);
-        idx = (idx + 1) % notes.length;
-        audioTimer = setTimeout(step, note.d * 1000 + 100);
-      }
-      step();
-    }
-
-    /* ================= CONFETTI ================= */
+    /* CONFETTI */
     function triggerStampConfetti(e) {
       e.stopPropagation();
       confetti({
@@ -677,7 +681,7 @@
       });
     }
 
-    /* ================= BACKGROUND CANVAS ================= */
+    /* BACKGROUND CANVAS */
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
