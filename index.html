@@ -56,6 +56,7 @@
     /* Envelope & Card Wrapper */
     .viewport {
       perspective: 1200px;
+      -webkit-perspective: 1200px;
       z-index: 2;
       width: 100%;
       display: flex;
@@ -75,19 +76,22 @@
       }
     }
 
-    /* 3D Card Structure */
+    /* 3D Card Structure - Fixed for WebKit/iOS */
     .card {
       width: var(--card-width);
       height: var(--card-height);
       position: relative;
       transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
       transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      -webkit-transition: -webkit-transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
       cursor: pointer;
       user-select: none;
     }
 
     .card.flipped {
       transform: rotateY(180deg) !important;
+      -webkit-transform: rotateY(180deg) !important;
     }
 
     .card-face {
@@ -101,6 +105,9 @@
                   0 0 0 clamp(4px, 1.5vw, 8px) #ffffff,
                   0 0 20px rgba(251, 191, 36, 0.4);
       overflow: hidden;
+      /* Forces iOS Safari to treat backface correctly */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
     }
 
     /* ================= FRONT SIDE ================= */
@@ -113,6 +120,7 @@
       flex-direction: column;
       justify-content: space-between;
       padding: clamp(12px, 3vw, 22px);
+      z-index: 2;
     }
 
     .front-overlay {
@@ -187,11 +195,13 @@
       background: #fffdf5;
       color: var(--text-dark);
       transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
       display: grid;
       grid-template-columns: 1.2fr 0.8fr;
       padding: clamp(16px, 4vw, 30px);
       border: 2px solid #fde68a;
       overflow-y: auto;
+      z-index: 1;
     }
 
     .message-container {
@@ -472,18 +482,17 @@
 
   <script>
     /* ================= PARAMETERS & CONFIG ================= */
-    /* ================= PARAMETERS & CONFIG ================= */
-const messages = {
-  polite: "Happy Birthday, Angun. 🎈\n\nI miss you and wish you all the best. I hope your day is filled with peace, smiles, and happiness na Angun <3.",
-  short: "Happy Birthday, Angun! 💛\n\nWishing you a warm, gentle day and a year full of peace and good health."
-};
+    const messages = {
+      polite: "Happy Birthday, Angun. 🎈\n\nI miss you and wish you all the best. I hope your day is filled with peace, smiles, and happiness na Angun <3.",
+      short: "Happy Birthday, Angun! 💛\n\nWishing you a warm, gentle day and a year full of peace and good health."
+    };
 
     let currentMessage = messages.polite;
     let typingIndex = 0;
     let typingTimer = null;
     let isFlipped = false;
 
-    /* ================= RELIABLE FLIP LOGIC ================= */
+    /* ================= RELIABLE FLIP LOGIC FOR IOS ================= */
     const postcard = document.getElementById('postcard');
 
     function flipCard(event) {
@@ -492,7 +501,14 @@ const messages = {
       isFlipped = !isFlipped;
       postcard.classList.toggle('flipped', isFlipped);
 
-      postcard.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+      // Explicitly set WebKit transforms so iOS Safari doesn't mirror
+      if (isFlipped) {
+        postcard.style.transform = 'rotateY(180deg)';
+        postcard.style.webkitTransform = 'rotateY(180deg)';
+      } else {
+        postcard.style.transform = 'rotateY(0deg)';
+        postcard.style.webkitTransform = 'rotateY(0deg)';
+      }
 
       triggerHeartBurst();
 
@@ -503,7 +519,7 @@ const messages = {
       }
     }
 
-    // 3D Parallax Tilt Effect for Mouse Devices
+    // Disable 3D tilt on touch devices to prevent WebKit glitching
     const viewport = document.querySelector('.viewport');
 
     viewport.addEventListener('mousemove', (e) => {
@@ -517,10 +533,13 @@ const messages = {
 
       const baseRotation = isFlipped ? 180 : 0;
       postcard.style.transform = `rotateX(${rotX}deg) rotateY(${baseRotation + rotY}deg)`;
+      postcard.style.webkitTransform = `rotateX(${rotX}deg) rotateY(${baseRotation + rotY}deg)`;
     });
 
     viewport.addEventListener('mouseleave', () => {
-      postcard.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+      const baseRotation = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+      postcard.style.transform = baseRotation;
+      postcard.style.webkitTransform = baseRotation;
     });
 
     /* ================= TYPEWRITER EFFECT ================= */
@@ -649,7 +668,7 @@ const messages = {
       });
     }
 
-    /* ================= BACKGROUND CANVAS: FLOATING HEARTS & GRAPES ================= */
+    /* ================= BACKGROUND CANVAS ================= */
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
@@ -672,7 +691,7 @@ const messages = {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height + canvas.height;
         this.icon = cuteIcons[Math.floor(Math.random() * cuteIcons.length)];
-        this.fontSize = Math.floor(Math.random() * 12 + 16); // 16px to 28px
+        this.fontSize = Math.floor(Math.random() * 12 + 16);
         this.speedY = Math.random() * 0.7 + 0.3;
         this.swaySpeed = Math.random() * 0.02 + 0.01;
         this.swayAngle = Math.random() * Math.PI * 2;
