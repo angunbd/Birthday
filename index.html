@@ -427,10 +427,9 @@
   <canvas id="bg-canvas"></canvas>
 
   <!-- Local Audio File -->
- <audio controls>
-  <source src="palaad-palaen.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
+  <audio id="bg-audio" loop preload="auto">
+    <source src="palaad-palaen.mp3" type="audio/mpeg" />
+  </audio>
 
   <div class="viewport">
     <div class="card" id="postcard" onclick="flipCard(event)">
