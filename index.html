@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Super Cute Interactive Postcard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Itim&display=swap');
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%);
+      --card-width: clamp(300px, 88vw, 580px);
+      --card-height: clamp(380px, 60vh, 380px);
+      --yellow-main: #f59e0b;
+      --yellow-soft: #fef08a;
+      --pink-soft: #f43f5e;
+      --text-dark: #451a03;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      background: var(--bg-gradient);
+      font-family: 'Fredoka', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      color: var(--text-dark);
+      padding: clamp(10px, 3vw, 20px);
+    }
+
+    html {
+      height: -webkit-fill-available;
+    }
+
+    /* Ambient Canvas */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Envelope & Card Wrapper */
+    .viewport {
+      perspective: 1200px;
+      z-index: 2;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: cardPopIn 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes cardPopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.6) translateY(50px) rotate(-5deg);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0) rotate(0deg);
+      }
+    }
+
+    /* 3D Card Structure */
+    .card {
+      width: var(--card-width);
+      height: var(--card-height);
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg) !important;
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: clamp(18px, 4vw, 28px);
+      box-shadow: 0 20px 35px -12px rgba(217, 119, 6, 0.3),
+                  0 0 0 clamp(4px, 1.5vw, 8px) #ffffff,
+                  0 0 20px rgba(251, 191, 36, 0.4);
+      overflow: hidden;
+    }
+
+    /* ================= FRONT SIDE ================= */
+    .card-front {
+      background-image: url('angun1.jpg');
+      background-size: cover;
+      background-position: center;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(12px, 3vw, 22px);
+    }
+
+    .front-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(69, 26, 3, 0.15) 0%, rgba(69, 26, 3, 0.6) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .front-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+      border: 3px dashed #fef08a;
+      padding: clamp(12px, 3vw, 20px);
+      border-radius: clamp(12px, 3vw, 20px);
+      background: rgba(254, 243, 199, 0.25);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
+    }
+
+    .front-header {
+      font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+      letter-spacing: 2px;
+      color: var(--yellow-soft);
+      font-weight: 600;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      animation: pulseGlow 2s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from { text-shadow: 0 2px 4px rgba(0,0,0,0.5), 0 0 5px rgba(254, 240, 138, 0.4); }
+      to { text-shadow: 0 2px 4px rgba(0,0,0,0.5), 0 0 15px rgba(254, 240, 138, 0.9); }
+    }
+
+    .front-title {
+      font-size: clamp(1.8rem, 6vw, 2.8rem);
+      color: #ffffff;
+      font-weight: 700;
+      margin: 4px 0 2px;
+      text-shadow: 0 4px 12px rgba(180, 83, 9, 0.7);
+    }
+
+    .front-subtitle {
+      font-family: 'Itim', cursive;
+      font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+      color: #fef08a;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    .flip-prompt {
+      font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 18px);
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* ================= BACK SIDE ================= */
+    .card-back {
+      background: #fffdf5;
+      color: var(--text-dark);
+      transform: rotateY(180deg);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      padding: clamp(16px, 4vw, 30px);
+      border: 2px solid #fde68a;
+      overflow-y: auto;
+    }
+
+    .message-container {
+      border-right: 2px dashed #fde047;
+      padding-right: clamp(12px, 3vw, 22px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .typewriter-text {
+      font-family: 'Itim', cursive;
+      font-size: clamp(1.05rem, 3.2vw, 1.35rem);
+      line-height: 1.5;
+      color: #78350f;
+      min-height: 140px;
+      white-space: pre-wrap;
+    }
+
+    .signature {
+      font-family: 'Itim', cursive;
+      font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+      color: #d97706;
+      text-align: right;
+      opacity: 0;
+      transition: opacity 1s ease;
+      margin-top: 8px;
+    }
+
+    .details-container {
+      padding-left: clamp(12px, 3vw, 22px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    /* Stamp Design */
+    .stamp-box {
+      width: clamp(65px, 15vw, 80px);
+      height: clamp(80px, 18vw, 95px);
+      border: 3px dotted #f59e0b;
+      background: #fef9c3;
+      padding: 4px;
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .stamp-box:hover, .stamp-box:active {
+      transform: scale(1.1) rotate(-6deg);
+    }
+
+    .stamp-inner {
+      width: 100%;
+      height: 100%;
+      background: #fde047;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: clamp(0.6rem, 1.8vw, 0.7rem);
+      color: #78350f;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .stamp-icon {
+      font-size: clamp(1.3rem, 4vw, 1.7rem);
+      margin-bottom: 2px;
+      animation: wiggle 3s infinite;
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-8deg); }
+      75% { transform: rotate(8deg); }
+    }
+
+    /* Custom Right Side Note */
+    .right-note {
+      width: 100%;
+      text-align: center;
+      font-family: 'Itim', cursive;
+      font-size: clamp(1.1rem, 3.2vw, 1.4rem);
+      color: #b45309;
+      background: #fef9c3;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 2px dashed #fde047;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* ================= CUTE MASCOT CHARACTER ================= */
+    .mascot-container {
+      position: fixed;
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      right: calc(12px + env(safe-area-inset-right));
+      z-index: 10;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .speech-bubble {
+      background: #ffffff;
+      padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 14px);
+      border-radius: 18px;
+      font-size: clamp(0.75rem, 2.2vw, 0.85rem);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+      border: 2px solid #fde047;
+      color: #78350f;
+      font-weight: 600;
+      animation: floatBubble 2s infinite ease-in-out;
+    }
+
+    @keyframes floatBubble {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .mascot-avatar {
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      transition: transform 0.2s ease;
+    }
+
+    .mascot-container:hover .mascot-avatar, .mascot-container:active .mascot-avatar {
+      transform: scale(1.15) rotate(8deg);
+    }
+
+    /* ================= CONTROLS ================= */
+    .controls-panel {
+      z-index: 2;
+      margin-top: clamp(15px, 3vw, 25px);
+      margin-bottom: calc(20px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(8px, 2vw, 12px);
+      justify-content: center;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .btn {
+      background: #ffffff;
+      border: 2px solid #fcd34d;
+      color: #b45309;
+      padding: clamp(8px, 2vw, 10px) clamp(14px, 3.5vw, 22px);
+      border-radius: 25px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+      transition: all 0.25s ease;
+    }
+
+    .btn:hover, .btn:active {
+      background: #fef3c7;
+      transform: translateY(-2deg) scale(1.02);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
+    }
+
+    /* ================= MOBILE & TABLET RESPONSIVE RULES ================= */
+    @media (max-width: 550px) {
+      :root {
+        --card-height: 420px;
+      }
+      .card-back {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+        gap: 12px;
+        padding: 16px;
+      }
+      .message-container {
+        border-right: none;
+        border-bottom: 2px dashed #fde047;
+        padding-right: 0;
+        padding-bottom: 12px;
+      }
+      .typewriter-text {
+        min-height: 120px;
+      }
+      .details-container {
+        padding-left: 0;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+      }
+      .right-note {
+        font-size: 1.1rem;
+        padding: 6px 10px;
+      }
+      .speech-bubble {
+        max-width: 120px;
+      }
+    }
+
+    @media (min-width: 551px) and (max-width: 820px) {
+      :root {
+        --card-width: 85vw;
+        --card-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Canvas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="viewport">
+    <div class="card" id="postcard" onclick="flipCard(event)">
+      
+      <!-- FRONT FACE -->
+      <div class="card-face card-front">
+        <div class="front-overlay"></div>
+        <div class="front-content">
+          <div class="front-header">✨ A Special Wish For You Na ✨</div>
+          <div>
+            <h1 class="front-title">Happy Birthday Angun!</h1>
+            <p class="front-subtitle">Wishing you bright days & lots of happiness 💛</p>
+          </div>
+          <div class="flip-prompt">
+            <span>Tap Here To Opan Na Angun</span> ↺
+          </div>
+        </div>
+      </div>
+
+      <!-- BACK FACE -->
+      <div class="card-face card-back">
+        <div class="message-container">
+          <div class="typewriter-text" id="message-text"></div>
+          <div class="signature" id="signature-text">— Warm wishes, Sai 💛</div>
+        </div>
+
+        <div class="details-container">
+          <div class="stamp-box" id="stamp" onclick="triggerStampConfetti(event)" title="Tap for a sweet surprise!">
+            <div class="stamp-inner">
+              <span class="stamp-icon">🎂</span>
+              <span>August<br>1</span>
+            </div>
+          </div>
+          
+          <div class="right-note">
+            <span>I miss u so much</span> 💛
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTROL PANEL -->
+  <div class="controls-panel">
+    <button class="btn" onclick="flipCard(event)">Flip Card ↺</button>
+    <button class="btn" id="music-btn" onclick="toggleMusic()">🎵 Music: OFF</button>
+    <button class="btn" onclick="changeTone('polite')">Warm Wish 🌻</button>
+    <button class="btn" onclick="changeTone('short')">Short Wish 🐥</button>
+  </div>
+
+  <!-- Cute Mascot Buddy -->
+  <div class="mascot-container" id="mascot" onclick="mascotTalk()">
+    <div class="speech-bubble" id="speech">Tap me! 🐾</div>
+    <div class="mascot-avatar">🐻</div>
+  </div>
+
+  <!-- External Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    /* ================= PARAMETERS & CONFIG ================= */
+    /* ================= PARAMETERS & CONFIG ================= */
+const messages = {
+  polite: "Happy Birthday, Angun. 🎈\n\nI miss you and wish you all the best. I hope your day is filled with peace, smiles, and happiness na Angun <3.",
+  short: "Happy Birthday, Angun! 💛\n\nWishing you a warm, gentle day and a year full of peace and good health."
+};
+
+    let currentMessage = messages.polite;
+    let typingIndex = 0;
+    let typingTimer = null;
+    let isFlipped = false;
+
+    /* ================= RELIABLE FLIP LOGIC ================= */
+    const postcard = document.getElementById('postcard');
+
+    function flipCard(event) {
+      if (event) event.stopPropagation();
+      
+      isFlipped = !isFlipped;
+      postcard.classList.toggle('flipped', isFlipped);
+
+      postcard.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+
+      triggerHeartBurst();
+
+      if (isFlipped) {
+        startTypewriter();
+      } else {
+        resetTypewriter();
+      }
+    }
+
+    // 3D Parallax Tilt Effect for Mouse Devices
+    const viewport = document.querySelector('.viewport');
+
+    viewport.addEventListener('mousemove', (e) => {
+      if (window.innerWidth < 640 || 'ontouchstart' in window) return;
+      const rect = viewport.getBoundingClientRect();
+      const x = e.clientX - rect.left - (rect.width / 2);
+      const y = e.clientY - rect.top - (rect.height / 2);
+      
+      const rotX = (y / (rect.height / 2)) * -8;
+      const rotY = (x / (rect.width / 2)) * 8;
+
+      const baseRotation = isFlipped ? 180 : 0;
+      postcard.style.transform = `rotateX(${rotX}deg) rotateY(${baseRotation + rotY}deg)`;
+    });
+
+    viewport.addEventListener('mouseleave', () => {
+      postcard.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    });
+
+    /* ================= TYPEWRITER EFFECT ================= */
+    function startTypewriter() {
+      resetTypewriter();
+      const textContainer = document.getElementById('message-text');
+      const signature = document.getElementById('signature-text');
+
+      function type() {
+        if (typingIndex < currentMessage.length) {
+          textContainer.textContent += currentMessage.charAt(typingIndex);
+          typingIndex++;
+          typingTimer = setTimeout(type, 35);
+        } else {
+          signature.style.opacity = '1';
+        }
+      }
+      type();
+    }
+
+    function resetTypewriter() {
+      clearTimeout(typingTimer);
+      typingIndex = 0;
+      document.getElementById('message-text').textContent = '';
+      document.getElementById('signature-text').style.opacity = '0';
+    }
+
+    function changeTone(type) {
+      currentMessage = messages[type];
+      if (isFlipped) {
+        startTypewriter();
+      }
+    }
+
+    /* ================= CUTE MASCOT INTERACTION ================= */
+    const phrases = [
+      "Happy Birthday! 🎉",
+      "Have a sweet day! 🍰",
+      "Sending big hugs! 💛",
+      "Make a wish! ⭐"
+    ];
+    let phraseIdx = 0;
+
+    function mascotTalk() {
+      phraseIdx = (phraseIdx + 1) % phrases.length;
+      document.getElementById('speech').innerText = phrases[phraseIdx];
+      confetti({
+        particleCount: 15,
+        spread: 40,
+        origin: { x: 0.85, y: 0.85 },
+        colors: ['#fbbf24', '#f43f5e']
+      });
+    }
+
+    /* ================= 8-BIT AUDIO SYNTHESIZER ================= */
+    let audioCtx = null;
+    let isPlaying = false;
+    let audioTimer = null;
+
+    function toggleMusic() {
+      const btn = document.getElementById('music-btn');
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      if (isPlaying) {
+        isPlaying = false;
+        clearTimeout(audioTimer);
+        btn.innerText = "🎵 Music: OFF";
+      } else {
+        isPlaying = true;
+        btn.innerText = "🎵 Music: ON ✨";
+        playLullabyMelody();
+      }
+    }
+
+    function playNote(freq, duration) {
+      if (!isPlaying || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const notes = [
+      { f: 264, d: 0.3 }, { f: 264, d: 0.3 }, { f: 297, d: 0.5 }, { f: 264, d: 0.5 }, { f: 352, d: 0.5 }, { f: 330, d: 0.8 },
+      { f: 264, d: 0.3 }, { f: 264, d: 0.3 }, { f: 297, d: 0.5 }, { f: 264, d: 0.5 }, { f: 396, d: 0.5 }, { f: 352, d: 0.8 }
+    ];
+
+    function playLullabyMelody() {
+      let idx = 0;
+      function step() {
+        if (!isPlaying) return;
+        const note = notes[idx];
+        playNote(note.f, note.d);
+        idx = (idx + 1) % notes.length;
+        audioTimer = setTimeout(step, note.d * 1000 + 100);
+      }
+      step();
+    }
+
+    /* ================= CONFETTI ================= */
+    function triggerStampConfetti(e) {
+      e.stopPropagation();
+      confetti({
+        particleCount: 60,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#fef08a', '#fbbf24', '#f43f5e', '#ffffff', '#a7f3d0']
+      });
+    }
+
+    function triggerHeartBurst() {
+      confetti({
+        particleCount: 20,
+        spread: 50,
+        origin: { y: 0.5 },
+        colors: ['#fbbf24', '#f43f5e', '#ffffff'],
+        scalar: 0.9
+      });
+    }
+
+    /* ================= BACKGROUND CANVAS: FLOATING HEARTS & GRAPES ================= */
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const cuteIcons = ['🍇', '💕', '💛', '🍇', '💖', '✨'];
+
+    class CuteFloatingParticle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height + canvas.height;
+        this.icon = cuteIcons[Math.floor(Math.random() * cuteIcons.length)];
+        this.fontSize = Math.floor(Math.random() * 12 + 16); // 16px to 28px
+        this.speedY = Math.random() * 0.7 + 0.3;
+        this.swaySpeed = Math.random() * 0.02 + 0.01;
+        this.swayAngle = Math.random() * Math.PI * 2;
+        this.opacity = Math.random() * 0.45 + 0.25;
+      }
+
+      update() {
+        this.y -= this.speedY;
+        this.swayAngle += this.swaySpeed;
+        this.x += Math.sin(this.swayAngle) * 0.5;
+
+        if (this.y < -30) this.reset();
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.font = `${this.fontSize}px 'Fredoka', sans-serif`;
+        ctx.fillText(this.icon, this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    for (let i = 0; i < 30; i++) {
+      particles.push(new CuteFloatingParticle());
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+  </script>
+</body>
+</html>
