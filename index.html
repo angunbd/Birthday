@@ -53,16 +53,6 @@
       pointer-events: none;
     }
 
-    /* Hidden YouTube Player Wrapper */
-    #yt-player-container {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-
     /* Envelope & Card Wrapper */
     .viewport {
       perspective: 1200px;
@@ -436,10 +426,10 @@
   <!-- Ambient Canvas -->
   <canvas id="bg-canvas"></canvas>
 
-  <!-- Hidden Container for YouTube iFrame -->
-  <div id="yt-player-container">
-    <div id="yt-player"></div>
-  </div>
+  <!-- Local Audio File -->
+  <audio id="bg-audio" loop preload="auto">
+    <source src="palaad-palaen.mp3" type="audio/mpeg" />
+  </audio>
 
   <div class="viewport">
     <div class="card" id="postcard" onclick="flipCard(event)">
@@ -501,8 +491,6 @@
 
   <!-- External Confetti Library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- YouTube IFrame API -->
-  <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
     /* PARAMETERS & CONFIG */
@@ -516,46 +504,20 @@
     let typingTimer = null;
     let isFlipped = false;
 
-    /* YOUTUBE AUDIO INTEGRATION ("ปะแล๊ดปะแล่น" - เบื๊อก Feat. เดอะเพอะ) */
-    let player;
-    let isPlaying = false;
-
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('yt-player', {
-        height: '1',
-        width: '1',
-        videoId: 'dIY8tX83x-U', // Official "ปะแล๊ดปะแล่น" Video ID
-        playerVars: {
-          'autoplay': 0,
-          'controls': 0,
-          'loop': 1,
-          'playlist': 'dIY8tX83x-U'
-        },
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-
-    function onPlayerStateChange(event) {
-      const btn = document.getElementById('music-btn');
-      if (event.data === YT.PlayerState.PLAYING) {
-        isPlaying = true;
-        btn.innerText = "🎵 Palaad Palaen ✨";
-      } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-        isPlaying = false;
-        btn.innerText = "🎵 Music: OFF";
-      }
-    }
-
+    /* AUDIO PLAYBACK FOR LOCAL MP3 */
     function toggleMusic() {
+      const audio = document.getElementById('bg-audio');
       const btn = document.getElementById('music-btn');
-      if (!player) return;
 
-      if (isPlaying) {
-        player.pauseVideo();
+      if (audio.paused) {
+        audio.play().then(() => {
+          btn.innerText = "🎵 Palaad Palaen ✨";
+        }).catch((err) => {
+          console.log("Audio play error:", err);
+        });
       } else {
-        player.playVideo();
+        audio.pause();
+        btn.innerText = "🎵 Music: OFF";
       }
     }
 
